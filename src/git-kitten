@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# git-kitten — opt-in `kitten diff` (kitty) for git, no persistent git config.
+#
+# Installed as `git-kitten` on PATH, git exposes it as the subcommand `kitten`,
+# so `git kitten diff <A> <B>` runs `git-kitten diff <A> <B>`.
+#
+# POSIX sh on purpose: no dependency beyond /bin/sh (runs under dash, busybox,
+# bash, ksh). The script's interpreter is chosen by this shebang and is
+# independent of the user's interactive shell (zsh/fish/etc.).
+
+set -eu # no `pipefail`/`-o`: those are bash/ksh, not POSIX
+
+usage() {
+  cat <<'EOF'
+usage: git kitten diff [<git diff args>]
+       git kitten diff <A> <B> # commits / branches / ranges / paths
+
+Opens `kitten diff` for a git diff. Opt-in, no git config needed.
+All `git diff` argument forms work (they are handed to `git difftool
+--dir-diff`).
+
+To diff two arbitrary files or directories, there is no need for git. Use
+kitten directly: kitten diff <A> <B>
+EOF
+}
+
+command -v kitten >/dev/null 2>&1 || {
+  echo "git kitten: 'kitten' not found (install kitty)" >&2
+  exit 127
+}
+
+sub="${1:-}"
+case "$sub" in
+  diff) shift ;;
+  "" | -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "git kitten: unknown subcommand '$sub'" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
+
+# git-kitten only adds git-awareness. Diffing two plain files or dirs needs
+# neither git nor this wrapper, so point at `kitten diff` instead of
+# re-implementing it here.
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "git kitten: not inside a git repository." >&2
+  echo "  to diff two files or dirs, run: kitten diff <A> <B>" >&2
+  exit 2
+fi
+
+# Guard the common mistake of passing two plain files: git treats bare
+# filenames as *pathspecs* (a working-vs-index diff limited to those paths),
+# not as a file-vs-file diff, which is surprising and usually shows nothing or
+# a single file.
+if [ $# -eq 2 ] && [ -e "$1" ] && [ -e "$2" ] &&
+  ! git rev-parse --verify --quiet "$1" >/dev/null 2>&1 &&
+  ! git rev-parse --verify --quiet "$2" >/dev/null 2>&1; then
+  echo "git kitten: '$1' and '$2' look like files, not git revisions." >&2
+  echo "  to diff them, run: kitten diff '$1' '$2'" >&2
+  exit 2
+fi
+
+# Nothing to show, e.g. HEAD vs the branch you're on, or a clean working tree.
+if git diff --quiet "$@" 2>/dev/null; then
+  echo "git kitten: no differences between the given inputs"
+  # A commit-to-commit diff, e.g. HEAD vs the branch you're on.
+  if ! git diff --quiet HEAD 2>/dev/null; then
+    echo "  note: you have uncommitted changes (ignored when comparing commits)."
+    echo "        to see them, run: git kitten diff, or git kitten diff HEAD"
+  fi
+  exit 0
+fi
+
+# In a repo: hand full `git diff` argument parity to difftool.
+#  • `--dir-diff`: materialize both sides into temp dirs, launch tool once.
+#  • `--no-prompt`: don't ask before launching.
+#  • `-c difftool.kitten.cmd=...`: defines an ad-hoc tool inline so nothing is
+#    written to the user's git config. Unlike `--extcmd` which git execs
+#    directly, so it can't carry the `diff` subcommand, a tool `.cmd` is run
+#    through the shell with $LOCAL/$REMOTE set to the two temp dirs.
+#
+# SHELLCHECK: The single quotes below are intentional: $LOCAL/$REMOTE must reach
+# git unexpanded so *git's* shell expands them at difftool time, not this shell.
+#
+# shellcheck disable=SC2016
+exec git \
+  -c difftool.kitten.cmd='kitten diff "$LOCAL" "$REMOTE"' \
+  difftool --dir-diff --no-prompt --tool=kitten "$@"
