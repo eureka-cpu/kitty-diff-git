@@ -3,6 +3,7 @@
 , kitty
 , git
 , makeWrapper
+, installShellFiles
 , shellcheck
 }:
 stdenvNoCC.mkDerivation {
@@ -13,7 +14,7 @@ stdenvNoCC.mkDerivation {
     src = lib.cleanSource ./.;
   };
 
-  nativeBuildInputs = [ makeWrapper ];
+  nativeBuildInputs = [ makeWrapper installShellFiles ];
   nativeCheckInputs = [ shellcheck ];
 
   dontConfigure = true; # Keep the POSIX `#!/bin/sh` script intact.
@@ -24,6 +25,8 @@ stdenvNoCC.mkDerivation {
     install -Dm755 git-kitten "$out/bin/git-kitten"
     wrapProgram "$out/bin/git-kitten" \
       --prefix PATH : ${lib.makeBinPath [ kitty git ]}
+    # Lets `git kitten --help` (which runs `man git-kitten`) find our help.
+    installManPage git-kitten.1
     runHook postInstall
   '';
 

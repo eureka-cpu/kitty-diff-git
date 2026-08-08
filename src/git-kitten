@@ -44,6 +44,15 @@ case "$sub" in
     ;;
 esac
 
+# Show our own help for `git kitten diff -h|--help` rather than forwarding the
+# flag on to `git difftool` (whose help would otherwise be shown).
+case "${1:-}" in
+  -h | --help)
+    usage
+    exit 0
+    ;;
+esac
+
 # git-kitten only adds git-awareness. Diffing two plain files or dirs needs
 # neither git nor this wrapper, so point at `kitten diff` instead of
 # re-implementing it here.
@@ -70,8 +79,8 @@ if git diff --quiet "$@" 2>/dev/null; then
   echo "git kitten: no differences between the given inputs"
   # A commit-to-commit diff, e.g. HEAD vs the branch you're on.
   if ! git diff --quiet HEAD 2>/dev/null; then
-    echo "  note: you have uncommitted changes (ignored when comparing commits)."
-    echo "        to see them, run: git kitten diff, or git kitten diff HEAD"
+    echo "Tip: you have uncommitted changes which are ignored when comparing commits."
+    echo "To see them, run: git kitten diff, or git kitten diff HEAD."
   fi
   exit 0
 fi

@@ -1,0 +1,59 @@
+.TH GIT-KITTEN 1 "2026-08-08" "git-kitten 0.1.0" "Git Kitten Manual"
+.SH NAME
+git-kitten \- opt-in kitten diff (kitty) as a git subcommand
+.SH SYNOPSIS
+.B git kitten diff
+[\fI<git diff args>\fR]
+.br
+.B git kitten diff
+\fI<A>\fR \fI<B>\fR
+.SH DESCRIPTION
+Open your git diffs in kitty's side-by-side viewer
+.RB ( "kitten diff" ).
+It is opt-in: a
+.B git kitten
+subcommand you run when you want it, with no changes to your git config.
+.PP
+.I <A>
+and
+.I <B>
+are anything you would give
+.BR "git diff" :
+commits, branches, ranges, or paths. Inside a repository all
+.B git diff
+argument forms are supported; they are handed to
+.B git difftool --dir-diff
+so the two sides are materialized into temporary directories and opened once.
+.SH EXAMPLES
+.TP
+.B git kitten diff
+Unstaged changes.
+.TP
+.B git kitten diff --staged
+Staged changes.
+.TP
+.B git kitten diff HEAD
+All uncommitted changes.
+.TP
+.B git kitten diff HEAD~1 HEAD
+Between two commits.
+.TP
+.B git kitten diff main feature
+Between two branches.
+.TP
+.B git kitten diff HEAD~1 HEAD -- path
+Scoped to a path.
+.SH NOTES
+Passing two revisions compares two commits and ignores the working tree; pass a
+single revision (for example
+.BR "git kitten diff origin/master" )
+to compare a commit against your working tree.
+.PP
+To compare two arbitrary files or directories you do not need git or this
+wrapper; use
+.B kitten diff a.txt b.txt
+directly.
+.SH SEE ALSO
+.BR git-diff (1),
+.BR git-difftool (1),
+.BR kitty (1)
