@@ -5,6 +5,10 @@
       url = "github:numtide/treefmt-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-vm-test = {
+      url = "github:numtide/nix-vm-test";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, ... }@inputs:
@@ -47,13 +51,27 @@
         default = pkgs.git-kitten;
       });
 
-      apps = eachSystem (pkgs: {
-        default = {
-          type = "app";
-          program = "${pkgs.git-kitten}/bin/git-kitten";
-          meta.description = "An opt-in kitty-diff git plugin.";
-        };
-      });
+      apps = eachSystem (pkgs:
+        {
+          default = {
+            type = "app";
+            program = "${pkgs.git-kitten}/bin/git-kitten";
+            meta.description = "An opt-in kitty-diff git plugin.";
+          };
+        }
+        # The install.sh VM test is a runnable driver (needs an Ubuntu image +
+        # network + KVM), so it is an app you `nix run`, not a hermetic check.
+        # nix-vm-test only supports x86_64-linux, so gate it there.
+        // nixpkgs.lib.optionalAttrs (pkgs.stdenv.buildPlatform.system == "x86_64-linux") {
+          install-script-test = {
+            type = "app";
+            program = "${import ./tests/install-script.nix {
+              system = pkgs.stdenv.buildPlatform.system;
+              nix-vm-test = inputs.nix-vm-test;
+            }}/bin/test-driver";
+            meta.description = "Run install.sh on an Ubuntu VM (needs KVM).";
+          };
+        });
 
       checks = eachSystem (pkgs: {
         treefmt-check =
@@ -64,10 +82,10 @@
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          inputsFrom =
-            [
-              pkgs.git-kitten
-            ] ++ builtins.attrValues self.checks.${pkgs.stdenv.buildPlatform.system};
+          inputsFrom = [
+            pkgs.git-kitten
+            self.checks.${pkgs.stdenv.buildPlatform.system}.treefmt-check
+          ];
           packages = with pkgs; [ nil ];
         };
       });
