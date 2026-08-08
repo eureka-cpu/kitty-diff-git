@@ -1,0 +1,7 @@
+{"v":"1.0.0"
+,"i":{
+"nix-vm-test":{"kd":[1,{"ft":1,"ur":"https://github.com/numtide/nix-vm-test/archive/1a587212d2ac8b669c6c32499015f996506b6ba5.tar.gz","ms":[]}],"ha":{"al":0,"vl":"sha256-cq4YfNFGYzp0NItZP8tEC7xUI8OSgY4fj75AU/NSaPM="},"fv":"1a587212d2ac8b669c6c32499015f996506b6ba5","ps":[]}
+,"treefmt":{"kd":[1,{"ft":1,"ur":"https://github.com/numtide/treefmt-nix/archive/ae7910970dddc408fe6ab1c8e4b277bb21d72dc0.tar.gz","ms":[]}],"ha":{"al":0,"vl":"sha256-NLSyTCW4K4ofhNBllt3omPasm6QpralXH1DBZOc91Dw="},"fv":"ae7910970dddc408fe6ab1c8e4b277bb21d72dc0","ps":[]}
+}
+,"p":{}
+}

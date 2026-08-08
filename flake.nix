@@ -1,18 +1,9 @@
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    treefmt = {
-      url = "github:numtide/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-vm-test = {
-      url = "github:numtide/nix-vm-test";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs = { self, nixpkgs }:
     let
+      inputs = import ./nix/tamal { bootstrap-nixpkgs = nixpkgs; };
       overlays.default = import ./overlay.nix;
 
       eachSystem = f: nixpkgs.lib.genAttrs [
@@ -31,16 +22,19 @@
           overlays = [ overlays.default ];
         }));
 
+      treefmt = import inputs.treefmt;
       fmtOpts = {
         projectRootFile = "flake.lock";
         programs = {
           nixpkgs-fmt.enable = true;
           shfmt.enable = true;
+          kdlfmt.enable = true;
           mdformat.enable = true;
         };
-        # The shfmt module only exposes indent_size/simplify, so append -ci
-        # (indent switch-case bodies, i.e. the `*)` patterns) to its args.
-        settings.formatter.shfmt.options = [ "-ci" ];
+        settings.formatter = {
+          nixpkgs-fmt.excludes = [ "nix/tamal/*.nix" ];
+          shfmt.options = [ "-ci" ];
+        };
       };
     in
     {
@@ -51,34 +45,20 @@
         default = pkgs.git-kitten;
       });
 
-      apps = eachSystem (pkgs:
-        {
-          default = {
-            type = "app";
-            program = "${pkgs.git-kitten}/bin/git-kitten";
-            meta.description = "An opt-in kitty-diff git plugin.";
-          };
-        }
-        # The install.sh VM test is a runnable driver (needs an Ubuntu image +
-        # network + KVM), so it is an app you `nix run`, not a hermetic check.
-        # nix-vm-test only supports x86_64-linux, so gate it there.
-        // nixpkgs.lib.optionalAttrs (pkgs.stdenv.buildPlatform.system == "x86_64-linux") {
-          install-script-test = {
-            type = "app";
-            program = "${import ./tests/install-script.nix {
-              system = pkgs.stdenv.buildPlatform.system;
-              nix-vm-test = inputs.nix-vm-test;
-            }}/bin/test-driver";
-            meta.description = "Run install.sh on an Ubuntu VM (needs KVM).";
-          };
-        });
+      apps = eachSystem (pkgs: {
+        default = {
+          type = "app";
+          program = "${pkgs.git-kitten}/bin/git-kitten";
+          meta.description = "An opt-in kitty-diff git plugin.";
+        };
+      });
 
       checks = eachSystem (pkgs: {
         treefmt-check =
-          ((import inputs.treefmt).evalModule pkgs fmtOpts).config.build.check ./.;
+          (treefmt.evalModule pkgs fmtOpts).config.build.check ./.;
       });
 
-      formatter = eachSystem (pkgs: (inputs.treefmt.lib).mkWrapper pkgs fmtOpts);
+      formatter = eachSystem (pkgs: treefmt.mkWrapper pkgs fmtOpts);
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
