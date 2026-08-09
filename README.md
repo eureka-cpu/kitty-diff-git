@@ -39,6 +39,13 @@ PREFIX=/usr/local/bin ./install.sh
 Make sure the target directory is on your `PATH`, then run `git kitten diff`
 in any repo.
 
+To remove it again, run the same script with `--uninstall` (and the same
+`PREFIX`/`MANPREFIX` you installed with, if any):
+
+```sh
+./install.sh --uninstall
+```
+
 ### Nix
 
 Try it from anywhere (requires flakes):

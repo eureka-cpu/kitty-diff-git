@@ -93,6 +93,15 @@ in
       vm.succeed("cd /tmp/r && touch x y")
       out = vm.fail("cd /tmp/r && git kitten diff x y 2>&1")
       assert "look like files, not git revisions" in out, f"expected two-plain-files message:\n{out}"
+
+      # --uninstall removes the binary and man page.
+      vm.succeed("PREFIX=/usr/local/bin sh /mnt/git-kitten/install.sh --uninstall")
+      vm.fail("test -e /usr/local/bin/git-kitten")
+      vm.fail("test -e /usr/local/share/man/man1/git-kitten.1")
+
+      # Uninstalling again is a no-op that says so, rather than failing.
+      out = vm.succeed("PREFIX=/usr/local/bin sh /mnt/git-kitten/install.sh --uninstall 2>&1")
+      assert "not installed" in out.lower(), f"expected not-installed message:\n{out}"
     '';
   };
 }

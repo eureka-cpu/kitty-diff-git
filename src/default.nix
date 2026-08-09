@@ -5,6 +5,7 @@
 , makeWrapper
 , installShellFiles
 , shellcheck
+, checkbashisms
 }:
 stdenvNoCC.mkDerivation {
   pname = "git-kitten";
@@ -15,7 +16,7 @@ stdenvNoCC.mkDerivation {
   };
 
   nativeBuildInputs = [ makeWrapper installShellFiles ];
-  nativeCheckInputs = [ shellcheck ];
+  nativeCheckInputs = [ shellcheck checkbashisms ];
 
   dontConfigure = true; # Keep the POSIX `#!/bin/sh` script intact.
   dontBuild = true;
@@ -34,6 +35,7 @@ stdenvNoCC.mkDerivation {
   checkPhase = ''
     runHook preCheck
     shellcheck -s sh git-kitten
+    checkbashisms git-kitten
     runHook postCheck
   '';
 

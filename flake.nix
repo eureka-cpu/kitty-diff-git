@@ -57,6 +57,20 @@
       checks = eachSystem (pkgs: {
         treefmt-check =
           (treefmt.evalModule pkgs fmtOpts).config.build.check ./.;
+
+        install-script-lint = pkgs.runCommand "install-script-lint"
+          {
+            nativeBuildInputs = with pkgs; [
+              shellcheck
+              checkbashisms
+            ];
+          }
+          ''
+            install_sh=${./install.sh}
+            shellcheck --shell=sh "$install_sh"
+            checkbashisms "$install_sh"
+            touch $out
+          '';
       });
 
       formatter = eachSystem (pkgs: treefmt.mkWrapper pkgs fmtOpts);
