@@ -4,22 +4,22 @@
 version "1.0.0"
 default-fetch-time eval
 inputs {
-	treefmt {
-		archive {
-			url "https://github.com/numtide/treefmt-nix/archive/{{fresh_value}}.tar.gz"
-		}
-		fresh-cmd {
-			$ git ls-remote --heads "https://github.com/numtide/treefmt-nix.git" --refs "refs/heads/main"
-			| cut -f1
-		}
-	}
-	nix-vm-test {
-		archive {
-			url "https://github.com/numtide/nix-vm-test/archive/{{fresh_value}}.tar.gz"
-		}
-		fresh-cmd {
-			$ git ls-remote --heads "https://github.com/numtide/nix-vm-test.git" --refs "refs/heads/main"
-			| cut -f1
-		}
-	}
+    treefmt {
+        archive {
+            url "https://github.com/numtide/treefmt-nix/archive/{{fresh_value}}.tar.gz"
+        }
+        fresh-cmd {
+            $ git ls-remote --heads "https://github.com/numtide/treefmt-nix.git" --refs "refs/heads/main"
+            | cut -f1
+        }
+    }
+    nix-vm-test {
+        archive {
+            url "https://github.com/numtide/nix-vm-test/archive/{{fresh_value}}.tar.gz"
+        }
+        fresh-cmd {
+            $ git ls-remote --heads "https://github.com/numtide/nix-vm-test.git" --refs "refs/heads/main"
+            | cut -f1
+        }
+    }
 }

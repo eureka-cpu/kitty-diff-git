@@ -65,8 +65,7 @@
         default = pkgs.mkShell {
           inputsFrom = [
             pkgs.git-kitten
-            self.checks.${pkgs.stdenv.buildPlatform.system}.treefmt-check
-          ];
+          ] ++ builtins.attrValues self.checks.${pkgs.stdenv.buildPlatform.system};
           packages = with pkgs; [ nil ];
         };
       });
