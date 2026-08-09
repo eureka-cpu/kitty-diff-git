@@ -1,14 +1,9 @@
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    treefmt = {
-      url = "github:numtide/treefmt-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs = { self, nixpkgs }:
     let
+      inputs = import ./nix/tamal { bootstrap-nixpkgs = nixpkgs; };
       overlays.default = import ./overlay.nix;
 
       eachSystem = f: nixpkgs.lib.genAttrs [
@@ -27,16 +22,20 @@
           overlays = [ overlays.default ];
         }));
 
+      treefmt = import inputs.treefmt;
       fmtOpts = {
         projectRootFile = "flake.lock";
         programs = {
           nixpkgs-fmt.enable = true;
           shfmt.enable = true;
+          kdlfmt.enable = true;
+          yamlfmt.enable = true;
           mdformat.enable = true;
         };
-        # The shfmt module only exposes indent_size/simplify, so append -ci
-        # (indent switch-case bodies, i.e. the `*)` patterns) to its args.
-        settings.formatter.shfmt.options = [ "-ci" ];
+        settings.formatter = {
+          nixpkgs-fmt.excludes = [ "nix/tamal/*.nix" ];
+          shfmt.options = [ "-ci" ];
+        };
       };
     in
     {
@@ -57,17 +56,16 @@
 
       checks = eachSystem (pkgs: {
         treefmt-check =
-          ((import inputs.treefmt).evalModule pkgs fmtOpts).config.build.check ./.;
+          (treefmt.evalModule pkgs fmtOpts).config.build.check ./.;
       });
 
-      formatter = eachSystem (pkgs: (inputs.treefmt.lib).mkWrapper pkgs fmtOpts);
+      formatter = eachSystem (pkgs: treefmt.mkWrapper pkgs fmtOpts);
 
       devShells = eachSystem (pkgs: {
         default = pkgs.mkShell {
-          inputsFrom =
-            [
-              pkgs.git-kitten
-            ] ++ builtins.attrValues self.checks.${pkgs.stdenv.buildPlatform.system};
+          inputsFrom = [
+            pkgs.git-kitten
+          ] ++ builtins.attrValues self.checks.${pkgs.stdenv.buildPlatform.system};
           packages = with pkgs; [ nil ];
         };
       });

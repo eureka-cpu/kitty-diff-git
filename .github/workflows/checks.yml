@@ -1,0 +1,20 @@
+name: Checks
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  install-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - name: Run install.sh VM test
+        run: nix-build ./tests -A install-script-test.sandboxed
+  flake-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: cachix/install-nix-action@v31
+      - name: Run nix flake check
+        run: nix flake check --keep-going
