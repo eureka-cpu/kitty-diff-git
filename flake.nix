@@ -29,6 +29,7 @@
           nixpkgs-fmt.enable = true;
           shfmt.enable = true;
           kdlfmt.enable = true;
+          yamlfmt.enable = true;
           mdformat.enable = true;
         };
         settings.formatter = {
